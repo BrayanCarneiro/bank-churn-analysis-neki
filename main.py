@@ -1,87 +1,86 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 
-dataframe = pd.read_csv("data/Customer Churn.csv.csv")
+# Carregar dados Costumer da neki
+df = pd.read_csv("data/Customer Churn.csv.csv")
 
-print(dataframe.head())
-print("=======================")
-print(dataframe.describe())
-print("=====================")  
-print(dataframe.isnull().sum())
+taxa_churn = df["Exited"].mean() * 100
 
+# Churn por Atividade
+churn_por_atividade = df.groupby("IsActiveMember")["Exited"].mean() * 100
 
-#Pesquisando e fazendo perguntas para meu dataframe, para responder perguntar e aprofundar a analise final
-taxa_churn = dataframe["Exited"].mean() *100
-print(f"Taxa geral de churn: {taxa_churn:.2f}")
+# Churn por Número de Produtos
+churn_por_produtos = df.groupby("NumOfProducts")["Exited"].mean() * 100
 
-age_analysis = dataframe.groupby("Age")["Exited"].agg(["count", "sum"])
-age_analysis["churn_%"] = (age_analysis["sum"] / age_analysis["count"]) *100
-
-
-geo_analysis = dataframe.groupby("Geography")["Exited"].mean() * 100
-print(geo_analysis)
-
-geo_analysis.plot(kind="bar")
-plt.title("Churn por País (%)")
-plt.ylabel("% de Churn")
-plt.xticks(rotation = 0)
-plt.show()
-
-active_analysis  = dataframe.groupby("IsActiveMember")["Exited"].mean() *100
-print(active_analysis)
-
-prod_analysis = dataframe.groupby("NumOfProducts")["Exited"].mean() *100
-print(prod_analysis)
-
-
-credit_analysis = dataframe.groupby("CreditScore")["Exited"].mean() * 100
-
-dataframe["ScoreRange"] = pd.cut(
-    dataframe["CreditScore"],
-    bins=[300,500,650,750,900],
-    labels=["Baixo", "Medio", "Bom", "Excelente"],
-    
-
+# Churn na Faixa de Score
+df["ScoreRange"] = pd.cut(
+    df["CreditScore"],
+    bins=[300, 500, 650, 750, 900],
+    labels=["Baixo", "Medio", "Bom", "Excelente"]
 )
-score_group = dataframe.groupby("ScoreRange",observed=False)["Exited"].mean() * 100 
-print(score_group)
 
-dataframe["BalanceRange"] = "Zero"
+churn_por_score = df.groupby("ScoreRange", observed=False)["Exited"].mean() * 100
 
-non_zero = dataframe["Balance"] > 0
+# Churn na Faixa de Saldo
+df["BalanceRange"] = "Zero"
 
-dataframe.loc[non_zero, "BalanceRange"] = pd.qcut(
-    dataframe.loc[non_zero, "Balance"],
-    q= 3,
+non_zero = df["Balance"] > 0
+
+df.loc[non_zero, "BalanceRange"] = pd.qcut(
+    df.loc[non_zero, "Balance"],
+    q=3,
     labels=["Baixo", "Medio", "Alto"]
-
 )
 
-balance_analysis = dataframe.groupby("BalanceRange")["Exited"].mean() * 100
-print(balance_analysis)
+churn_por_saldo = df.groupby("BalanceRange")["Exited"].mean() * 100
 
-print(dataframe.groupby("BalanceRange")["IsActiveMember"].mean())
-
-print(pd.crosstab(dataframe["BalanceRange"], dataframe["NumOfProducts"]))
-
-
-dataframe["AgeRange"] = pd.cut(
-    dataframe["Age"],
+# Chunr por Faixa Etária
+df["AgeRange"] = pd.cut(
+    df["Age"],
     bins=[18, 30, 40, 50, 60, 100],
     labels=["18-30", "30-40", "40-50", "50-60", "60+"]
 )
 
-print(dataframe.groupby("AgeRange")["Exited"].mean() * 100)
-print(dataframe.groupby("AgeRange")["Balance"].mean())
-print(dataframe.groupby(["AgeRange", "BalanceRange"])["Exited"].mean() * 100)
+#Idade geral
+churn_por_idade = df.groupby("AgeRange")["Exited"].mean() * 100
+print(churn_por_idade)
 
-print(pd.crosstab(
-    dataframe["AgeRange"],
-    dataframe["HasCrCard"],
-    values=dataframe["Exited"],
+#Comparativo idade X geografia
+pivot_age_geo = pd.pivot_table(
+    df,
+    values="Exited",
+    index="AgeRange",
+    columns="Geography",
     aggfunc="mean"
-) * 100)
+) * 100
+
+print(pivot_age_geo)
+
+#Tempo de relacionamento
+
+df["TenureRange"] = pd.cut(
+    df["Tenure"],
+    bins=[-1, 2, 5, 8, 10],
+    labels=["0-2 anos", "3-5 anos", "6-8 anos", "9-10 anos"]
+)
+
+#analises finais
+churn_por_Tempo_de_relacionamento = df.groupby("TenureRange")["Exited"].mean() * 100
+
+churn_por_sexo = df.groupby("Gender")['Exited'].mean() * 100
 
 
+pd.pivot_table(
+    df,
+    values="Exited",
+    index="Gender",
+    columns="AgeRange",
+    aggfunc="mean"
+) * 100
 
-#colinha pro story telling, idade é o fator principal no churn dos filiados, porem dentro da idades a geografia e o saldo na conta impactam.
+pd.pivot_table(
+    df,
+    values="Exited",
+    index="Gender",
+    columns="Geography",
+    aggfunc="mean"
+)
